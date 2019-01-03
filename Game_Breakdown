@@ -1,0 +1,67 @@
+import os
+import pandas as pd
+import numpy as np
+import glob
+import datetime
+from collections import Counter
+import matplotlib.pyplot as plt
+from matplotlib.backends.backend_pdf import PdfPages
+import csv
+
+with open('data.csv', 'r') as csvfile:
+  data = pd.read_csv(csvfile, index_col=0,header=0)
+
+frame = pd.DataFrame(data[1:])
+AA = frame.loc[frame.UID == '14-2018-13']
+
+
+# Create a PDF with graph of all point of a game
+
+with PdfPages(r'C:\Users\Max\Desktop\Charts.pdf') as export_pdf:
+    plt.figure(num=None, figsize=(8.5,11 ), dpi=300, facecolor='w', edgecolor='k')
+    x = 1
+    
+    for i in range(AA.PID.max()):
+        BB = AA.loc[AA.PID == i+1]
+        
+        plt.subplot(4,2,x)
+        plt.subplots_adjust(hspace=0.5)
+        for index,row in BB.iterrows():
+            x1 = row['Begin X']
+            x2 = row['End X']
+            y1 = row['Begin Y']
+            y2 = row['End Y']
+
+            if row['Action'] in ["Pull", "PullOb"]:
+                plt.plot(x1,y1, 'yo', markersize=3)
+                plt.plot([x1,x2],[y1,y2], 'y:' , linewidth=1)
+            elif row['Action'] in ["OpponentPull", "OpponentPullOb"]:
+                plt.plot(x1,y1, 'go', markersize=3)
+                plt.plot([x1,x2],[y1,y2], 'g:', linewidth=1)
+            elif row['Event Type'] == 'Offense':
+                plt.plot([x1,x2],[y1,y2], 'bo-', linewidth=1, markersize=3)
+            else:   
+                plt.plot([x1,x2],[y1,y2], 'ro-', linewidth=1, markersize=3)
+            if row['Action'] in ["Throwaway", "Drop"]:
+                plt.plot(x2,y2, 'yo-', linewidth=1, markersize=3)
+            if row['Action'] == 'Goal':
+                plt.plot(x2,y2, 'ko-', markersize=5)
+
+        plt.plot([20,20],[0,54], 'k--', linewidth=1)
+        plt.plot([100,100],[0,54], 'k--', linewidth=1)
+        ax = plt.gca()
+        ax.axis([0,120,0,54])
+        title= row['Teamname'] + " "+ str(row['Our Score - End of Point']) +" - "+ str(row['Their Score - End of Point']) + " " + row['Opponent'] + " (Q"+ str(row['QID']) +" "+ str(row['PID']) +")"  
+        plt.title(title, fontsize=10)
+        print(title)
+        
+        if x == 8:
+            export_pdf.savefig()
+            plt.close()
+            plt.figure(num=None, figsize=(8.5,11 ), dpi=300, facecolor='w', edgecolor='k')
+            x=0
+        x+=1
+    
+    export_pdf.savefig()
+    plt.close()
+plt.close()    
